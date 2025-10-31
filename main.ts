@@ -10,7 +10,7 @@ serve(async (req) => {
     });
   }
 
-  const apiUrl = `https://m.tiktok.com/api/live/detail/?aid=1988&unique_id=${username}`;
+  const apiUrl = `https://www.tiktok.com/api/webcast/room/?aid=1988&unique_id=${username}`;
 
   try {
     const res = await fetch(apiUrl, {
@@ -20,30 +20,28 @@ serve(async (req) => {
         "Referer": `https://www.tiktok.com/@${username}/live`,
         "Accept": "application/json, text/plain, */*",
         "Accept-Language": "en-US,en;q=0.9",
-        "Sec-Fetch-Mode": "cors",
       },
     });
 
-    if (!res.ok) {
-      return new Response(
-        JSON.stringify({
-          username,
-          isLive: false,
-          error: `Gagal ambil data TikTok (status ${res.status})`,
-        }),
-        { headers: { "content-type": "application/json" } },
-      );
+    const text = await res.text();
+
+    // Kadang TikTok mengembalikan string JS, bukan JSON murni
+    let data: any;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      // Bersihkan jika ada prefix 'for (;;);'
+      data = JSON.parse(text.replace(/^for\s*\(;;\);\s*/, ""));
     }
 
-    const data = await res.json();
-    const liveRoom = data?.data?.liveRoom;
+    const liveRoom = data?.data;
 
-    if (!liveRoom) {
+    if (!liveRoom || !liveRoom.room_id_str) {
       return new Response(
         JSON.stringify({
           username,
           isLive: false,
-          message: "Tidak sedang live atau data kosong.",
+          message: "Tidak sedang live atau data tidak ditemukan.",
           rawFound: true,
         }),
         { headers: { "content-type": "application/json" } },
@@ -56,6 +54,7 @@ serve(async (req) => {
       title: liveRoom.title || "",
       viewerCount: liveRoom.user_count || 0,
       likeCount: liveRoom.like_count || 0,
+      roomId: liveRoom.room_id_str,
       streamUrl: liveRoom.stream_url?.rtmp_pull_url || "",
       cover: liveRoom.cover?.url_list?.[0] || "",
       rawFound: true,
