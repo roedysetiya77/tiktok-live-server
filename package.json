@@ -1,15 +1,13 @@
 {
-  "name": "tiktok-live-server",
+  "name": "tiktok-live-node",
   "version": "1.0.0",
+  "type": "module",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
-"dependencies": {
-  "express": "^4.19.0",
-  "socket.io": "^4.7.5",
-  "tiktok-live-connector": "1.4.5",
-  "ws": "^8.16.0"
-}
-
+  "dependencies": {
+    "express": "^4.19.0",
+    "node-fetch": "^3.3.2"
+  }
 }
