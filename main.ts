@@ -1,39 +1,41 @@
-// main.ts — TikTok Live Status API (versi JSON)
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 
 serve(async (req) => {
+  const url = new URL(req.url);
+  const username = url.searchParams.get("username");
+
+  if (!username) {
+    return new Response(JSON.stringify({ error: "Parameter 'username' wajib diisi." }), {
+      headers: { "content-type": "application/json" },
+    });
+  }
+
+  const apiUrl = `https://m.tiktok.com/api/live/detail/?aid=1988&unique_id=${username}`;
+
   try {
-    const url = new URL(req.url);
-    const username = url.searchParams.get("username");
-
-    if (!username) {
-      return new Response(JSON.stringify({ error: "Parameter 'username' wajib diisi." }), {
-        headers: { "content-type": "application/json" },
-      });
-    }
-
-    const apiUrl = `https://www.tiktok.com/api/live/detail/?aid=1988&unique_id=${username}`;
-
-    // TikTok butuh beberapa header agar tidak memblokir permintaan
     const res = await fetch(apiUrl, {
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+          "Mozilla/5.0 (Linux; Android 10; Mobile; rv:110.0) Gecko/110.0 Firefox/110.0",
         "Referer": `https://www.tiktok.com/@${username}/live`,
         "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Sec-Fetch-Mode": "cors",
       },
     });
 
     if (!res.ok) {
       return new Response(
-        JSON.stringify({ username, isLive: false, error: "Tidak bisa mengakses TikTok API." }),
+        JSON.stringify({
+          username,
+          isLive: false,
+          error: `Gagal ambil data TikTok (status ${res.status})`,
+        }),
         { headers: { "content-type": "application/json" } },
       );
     }
 
     const data = await res.json();
-
-    // Data akan muncul di field "data" → "liveRoom"
     const liveRoom = data?.data?.liveRoom;
 
     if (!liveRoom) {
@@ -41,17 +43,16 @@ serve(async (req) => {
         JSON.stringify({
           username,
           isLive: false,
-          message: "Tidak sedang live atau data tidak tersedia.",
+          message: "Tidak sedang live atau data kosong.",
           rawFound: true,
         }),
         { headers: { "content-type": "application/json" } },
       );
     }
 
-    // Parsing data penting
     const result = {
       username,
-      isLive: liveRoom.status === 2, // 2 = live, 4 = offline
+      isLive: liveRoom.status === 2,
       title: liveRoom.title || "",
       viewerCount: liveRoom.user_count || 0,
       likeCount: liveRoom.like_count || 0,
@@ -65,7 +66,7 @@ serve(async (req) => {
     });
   } catch (err) {
     return new Response(
-      JSON.stringify({ error: err.message || "Terjadi kesalahan tak terduga." }),
+      JSON.stringify({ username, isLive: false, error: err.message }),
       { headers: { "content-type": "application/json" } },
     );
   }
