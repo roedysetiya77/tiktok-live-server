@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: tiktok-live-deno
+    name: tiktok-live-server-1
     env: docker
     plan: free
     region: singapore
