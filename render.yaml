@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: tiktok-live-deno
+    env: docker
+    plan: free
+    region: singapore
+    buildCommand: ""
+    startCommand: deno run --allow-net main.ts
+    dockerfilePath: ./Dockerfile
